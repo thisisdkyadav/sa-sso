@@ -13,12 +13,24 @@ app.use(cookieParser())
 app.set("trust proxy", 1)
 const PORT = process.env.PORT || 3000
 
+// Get allowed origins from environment variable
+const allowedOrigins = process.env.ALLOWED_ORIGINS ? process.env.ALLOWED_ORIGINS.split(",") : []
+
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = path.dirname(__filename)
 
 app.use(
   cors({
-    origin: process.env.NODE_ENV === "production" ? process.env.FRONTEND_URL : ["http://localhost:5174", "http://localhost:3000", "http://localhost:5173"],
+    origin: function (origin, callback) {
+      // Allow requests with no origin (like mobile apps, curl requests)
+      if (!origin) return callback(null, true)
+
+      if (allowedOrigins.indexOf(origin) !== -1 || process.env.NODE_ENV !== "production") {
+        callback(null, true)
+      } else {
+        callback(new Error("Not allowed by CORS"))
+      }
+    },
     methods: ["GET", "POST", "PUT", "DELETE"],
     credentials: true,
   })
